@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mindmap mit Netz-Effekt</title>
+    <title>Erweiterbare Mindmap</title>
     <style>
         body {
             margin: 0;
@@ -37,24 +37,28 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    // Daten: Knoten
     const nodes = [
-        { id: 1, x: 300, y: 300, label: "Knoten A", category: "Haupt", description: "Beschreibung für Knoten A" },
-        { id: 2, x: 500, y: 200, label: "Knoten B", category: "Unterpunkt", description: "Beschreibung für Knoten B" },
-        { id: 3, x: 400, y: 400, label: "Knoten C", category: "Unterpunkt", description: "Beschreibung für Knoten C" },
-        { id: 4, x: 600, y: 400, label: "Knoten D", category: "Neben", description: "Beschreibung für Knoten D" }
+        { id: 1, x: 300, y: 300, label: "Hauptknoten", color: "#007BFF", category: "Haupt", description: "Das ist der Hauptknoten." },
+        { id: 2, x: 500, y: 200, label: "Unterknoten A", color: "#FF5733", category: "Unterpunkt", description: "Das ist Unterknoten A." },
+        { id: 3, x: 400, y: 400, label: "Unterknoten B", color: "#28A745", category: "Unterpunkt", description: "Das ist Unterknoten B." },
+        { id: 4, x: 600, y: 400, label: "Nebenpunkt", color: "#FFC107", category: "Neben", description: "Das ist der Nebenpunkt." },
+        { id: 5, x: 700, y: 300, label: "Zusatz", color: "#6F42C1", category: "Zusatz", description: "Zusätzlicher Knoten." }
     ];
 
+    // Daten: Verbindungen
     const links = [
-        { source: 1, target: 2, category: "Verbindung 1" },
-        { source: 1, target: 3, category: "Verbindung 2" },
-        { source: 2, target: 4, category: "Verbindung 3" },
-        { source: 3, target: 4, category: "Verbindung 4" }
+        { source: 1, target: 2, color: "#cccccc", category: "Verbindung 1" },
+        { source: 1, target: 3, color: "#cccccc", category: "Verbindung 2" },
+        { source: 2, target: 4, color: "#cccccc", category: "Verbindung 3" },
+        { source: 3, target: 5, color: "#cccccc", category: "Verbindung 4" },
+        { source: 4, target: 5, color: "#cccccc", category: "Verbindung 5" }
     ];
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw links
+        // Links zeichnen
         links.forEach(link => {
             const source = nodes.find(node => node.id === link.source);
             const target = nodes.find(node => node.id === link.target);
@@ -62,17 +66,17 @@
                 ctx.beginPath();
                 ctx.moveTo(source.x, source.y);
                 ctx.lineTo(target.x, target.y);
-                ctx.strokeStyle = "#ccc";
+                ctx.strokeStyle = link.color || "#ccc";
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
         });
 
-        // Draw nodes
+        // Knoten zeichnen
         nodes.forEach(node => {
             ctx.beginPath();
             ctx.arc(node.x, node.y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = "#007BFF";
+            ctx.fillStyle = node.color;
             ctx.fill();
             ctx.strokeStyle = "#ffffff";
             ctx.lineWidth = 2;
