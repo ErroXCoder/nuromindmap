@@ -25,7 +25,6 @@
             z-index: 1000;
             max-width: 300px;
             display: none;
-            transition: opacity 0.3s;
         }
         #tooltip {
             position: absolute;
@@ -41,7 +40,7 @@
             display: block;
             margin: 10px 0 5px;
         }
-        input, select, button {
+        input, button {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
@@ -86,7 +85,7 @@
 <div id="tooltip"></div>
 
 <div id="controls">
-    <h3>Knoten bearbeiten/hinzufügen</h3>
+    <h3>Knoten bearbeiten</h3>
     <label for="nodeLabel">Bezeichnung</label>
     <input type="text" id="nodeLabel" placeholder="Knotenname">
     <label for="nodeColor">Farbe</label>
@@ -95,16 +94,8 @@
     <input type="text" id="nodeCategory" placeholder="Kategorie">
     <label for="nodeDescription">Beschreibung</label>
     <input type="text" id="nodeDescription" placeholder="Beschreibung">
-    <button id="addNode">Knoten hinzufügen</button>
-    <h3>Verbindung bearbeiten/hinzufügen</h3>
-    <label for="sourceNode">Startknoten-ID</label>
-    <input type="number" id="sourceNode" placeholder="Start-ID">
-    <label for="targetNode">Zielknoten-ID</label>
-    <input type="number" id="targetNode" placeholder="Ziel-ID">
-    <label for="linkColor">Verbindungsfarbe</label>
-    <input type="color" id="linkColor" value="#cccccc">
-    <button id="addLink">Verbindung hinzufügen</button>
-    <button id="deleteLink">Verbindung löschen</button>
+    <button id="saveNode">Speichern</button>
+    <button id="deleteNode">Knoten löschen</button>
 </div>
 
 <div id="toggleControls">Bearbeitungsmenü</div>
@@ -126,11 +117,30 @@
     ];
     let links = [];
     let selectedNode = null;
-    let selectedLink = null;
     let isDragging = false;
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Kategorienverbindungen zeichnen
+        const categories = {};
+        nodes.forEach(node => {
+            if (!categories[node.category]) categories[node.category] = [];
+            categories[node.category].push(node);
+        });
+
+        Object.values(categories).forEach(categoryNodes => {
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(0, 0, 255, 0.1)";
+            ctx.lineWidth = 1;
+            categoryNodes.forEach((node, index) => {
+                if (index > 0) {
+                    ctx.moveTo(categoryNodes[index - 1].x, categoryNodes[index - 1].y);
+                    ctx.lineTo(node.x, node.y);
+                }
+            });
+            ctx.stroke();
+        });
 
         // Links zeichnen
         links.forEach(link => {
@@ -143,14 +153,6 @@
                 ctx.strokeStyle = link.color || "#ccc";
                 ctx.lineWidth = 2;
                 ctx.stroke();
-
-                // Verbindung "Hotspot" zeichnen
-                const midX = (source.x + target.x) / 2;
-                const midY = (source.y + target.y) / 2;
-                ctx.beginPath();
-                ctx.arc(midX, midY, 5, 0, Math.PI * 2);
-                ctx.fillStyle = "red";
-                ctx.fill();
             }
         });
 
@@ -171,51 +173,21 @@
         });
     }
 
-    function getMousePos(evt) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
-    }
-
-    function findNodeAtPosition(pos) {
-        return nodes.find(node => {
+    canvas.addEventListener('mousedown', (event) => {
+        const pos = { x: event.offsetX, y: event.offsetY };
+        selectedNode = nodes.find(node => {
             const dx = pos.x - node.x;
             const dy = pos.y - node.y;
             return Math.sqrt(dx * dx + dy * dy) < 20;
         });
-    }
-
-    function findLinkAtPosition(pos) {
-        return links.find(link => {
-            const source = nodes.find(node => node.id === link.source);
-            const target = nodes.find(node => node.id === link.target);
-            if (!source || !target) return false;
-
-            const midX = (source.x + target.x) / 2;
-            const midY = (source.y + target.y) / 2;
-
-            const dx = pos.x - midX;
-            const dy = pos.y - midY;
-
-            return Math.sqrt(dx * dx + dy * dy) < 5;
-        });
-    }
-
-    canvas.addEventListener('mousedown', (event) => {
-        const pos = getMousePos(event);
-        selectedNode = findNodeAtPosition(pos);
 
         if (selectedNode) {
+            document.getElementById('nodeLabel').value = selectedNode.label;
+            document.getElementById('nodeColor').value = selectedNode.color;
+            document.getElementById('nodeCategory').value = selectedNode.category;
+            document.getElementById('nodeDescription').value = selectedNode.description;
+            controls.style.display = 'block';
             isDragging = true;
-        } else {
-            selectedLink = findLinkAtPosition(pos);
-            if (selectedLink) {
-                document.getElementById('sourceNode').value = selectedLink.source;
-                document.getElementById('targetNode').value = selectedLink.target;
-                document.getElementById('linkColor').value = selectedLink.color;
-            }
         }
     });
 
@@ -229,43 +201,24 @@
 
     canvas.addEventListener('mouseup', () => {
         isDragging = false;
-        selectedNode = null;
     });
 
-    document.getElementById('addNode').addEventListener('click', () => {
-        const label = document.getElementById('nodeLabel').value;
-        const color = document.getElementById('nodeColor').value;
-        const category = document.getElementById('nodeCategory').value;
-        const description = document.getElementById('nodeDescription').value;
-
-        const newNode = {
-            id: nodes.length + 1,
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            label,
-            color,
-            category,
-            description,
-            draggable: false
-        };
-        nodes.push(newNode);
-        draw();
+    document.getElementById('saveNode').addEventListener('click', () => {
+        if (selectedNode) {
+            selectedNode.label = document.getElementById('nodeLabel').value;
+            selectedNode.color = document.getElementById('nodeColor').value;
+            selectedNode.category = document.getElementById('nodeCategory').value;
+            selectedNode.description = document.getElementById('nodeDescription').value;
+            draw();
+        }
     });
 
-    document.getElementById('addLink').addEventListener('click', () => {
-        const source = parseInt(document.getElementById('sourceNode').value);
-        const target = parseInt(document.getElementById('targetNode').value);
-        const color = document.getElementById('linkColor').value;
-
-        const newLink = { source, target, color };
-        links.push(newLink);
-        draw();
-    });
-
-    document.getElementById('deleteLink').addEventListener('click', () => {
-        if (selectedLink) {
-            links = links.filter(link => link !== selectedLink);
-            selectedLink = null;
+    document.getElementById('deleteNode').addEventListener('click', () => {
+        if (selectedNode) {
+            nodes = nodes.filter(node => node !== selectedNode);
+            links = links.filter(link => link.source !== selectedNode.id && link.target !== selectedNode.id);
+            selectedNode = null;
+            controls.style.display = 'none';
             draw();
         }
     });
