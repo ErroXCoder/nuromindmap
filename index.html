@@ -3,15 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erweiterbare Mindmap</title>
+    <title>Interaktive Mindmap</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             font-family: Arial, sans-serif;
         }
-        canvas {
+        #networkCanvas {
             display: block;
+            background: #f4f4f4;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 300px;
         }
         #tooltip {
             position: absolute;
@@ -23,37 +35,68 @@
             pointer-events: none;
             font-size: 14px;
         }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007BFF;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
     </style>
 </head>
 <body>
 <canvas id="networkCanvas"></canvas>
 <div id="tooltip"></div>
 
+<div id="controls">
+    <h3>Neuen Knoten hinzufügen</h3>
+    <label for="nodeLabel">Bezeichnung</label>
+    <input type="text" id="nodeLabel" placeholder="Knotenname">
+    <label for="nodeColor">Farbe</label>
+    <input type="color" id="nodeColor" value="#007BFF">
+    <label for="nodeCategory">Kategorie</label>
+    <input type="text" id="nodeCategory" placeholder="Kategorie">
+    <label for="nodeDescription">Beschreibung</label>
+    <input type="text" id="nodeDescription" placeholder="Beschreibung">
+    <button id="addNode">Knoten hinzufügen</button>
+
+    <h3>Neue Verbindung hinzufügen</h3>
+    <label for="sourceNode">Startknoten-ID</label>
+    <input type="number" id="sourceNode" placeholder="Start-ID">
+    <label for="targetNode">Zielknoten-ID</label>
+    <input type="number" id="targetNode" placeholder="Ziel-ID">
+    <label for="linkColor">Verbindungsfarbe</label>
+    <input type="color" id="linkColor" value="#cccccc">
+    <button id="addLink">Verbindung hinzufügen</button>
+</div>
+
 <script>
     const canvas = document.getElementById('networkCanvas');
     const ctx = canvas.getContext('2d');
     const tooltip = document.getElementById('tooltip');
+    const controls = document.getElementById('controls');
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Daten: Knoten
     const nodes = [
-        { id: 1, x: 300, y: 300, label: "Hauptknoten", color: "#007BFF", category: "Haupt", description: "Das ist der Hauptknoten." },
-        { id: 2, x: 500, y: 200, label: "Unterknoten A", color: "#FF5733", category: "Unterpunkt", description: "Das ist Unterknoten A." },
-        { id: 3, x: 400, y: 400, label: "Unterknoten B", color: "#28A745", category: "Unterpunkt", description: "Das ist Unterknoten B." },
-        { id: 4, x: 600, y: 400, label: "Nebenpunkt", color: "#FFC107", category: "Neben", description: "Das ist der Nebenpunkt." },
-        { id: 5, x: 700, y: 300, label: "Zusatz", color: "#6F42C1", category: "Zusatz", description: "Zusätzlicher Knoten." }
+        { id: 1, x: 300, y: 300, label: "Hauptknoten", color: "#007BFF", category: "Haupt", description: "Das ist der Hauptknoten." }
     ];
 
-    // Daten: Verbindungen
-    const links = [
-        { source: 1, target: 2, color: "#cccccc", category: "Verbindung 1" },
-        { source: 1, target: 3, color: "#cccccc", category: "Verbindung 2" },
-        { source: 2, target: 4, color: "#cccccc", category: "Verbindung 3" },
-        { source: 3, target: 5, color: "#cccccc", category: "Verbindung 4" },
-        { source: 4, target: 5, color: "#cccccc", category: "Verbindung 5" }
-    ];
+    const links = [];
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -125,6 +168,37 @@
     window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        draw();
+    });
+
+    // Knoten hinzufügen
+    document.getElementById('addNode').addEventListener('click', () => {
+        const label = document.getElementById('nodeLabel').value;
+        const color = document.getElementById('nodeColor').value;
+        const category = document.getElementById('nodeCategory').value;
+        const description = document.getElementById('nodeDescription').value;
+
+        const newNode = {
+            id: nodes.length + 1,
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            label,
+            color,
+            category,
+            description
+        };
+        nodes.push(newNode);
+        draw();
+    });
+
+    // Verbindung hinzufügen
+    document.getElementById('addLink').addEventListener('click', () => {
+        const source = parseInt(document.getElementById('sourceNode').value);
+        const target = parseInt(document.getElementById('targetNode').value);
+        const color = document.getElementById('linkColor').value;
+
+        const newLink = { source, target, color };
+        links.push(newLink);
         draw();
     });
 
