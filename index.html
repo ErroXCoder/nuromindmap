@@ -96,6 +96,15 @@
     <label for="nodeDescription">Beschreibung</label>
     <input type="text" id="nodeDescription" placeholder="Beschreibung">
     <button id="addNode">Knoten hinzufügen</button>
+    <h3>Verbindung bearbeiten/hinzufügen</h3>
+    <label for="sourceNode">Startknoten-ID</label>
+    <input type="number" id="sourceNode" placeholder="Start-ID">
+    <label for="targetNode">Zielknoten-ID</label>
+    <input type="number" id="targetNode" placeholder="Ziel-ID">
+    <label for="linkColor">Verbindungsfarbe</label>
+    <input type="color" id="linkColor" value="#cccccc">
+    <button id="addLink">Verbindung hinzufügen</button>
+    <button id="deleteLink">Verbindung löschen</button>
 </div>
 
 <div id="toggleControls">Bearbeitungsmenü</div>
@@ -117,6 +126,7 @@
     ];
     let links = [];
     let selectedNode = null;
+    let selectedLink = null;
     let isDragging = false;
 
     function draw() {
@@ -133,6 +143,14 @@
                 ctx.strokeStyle = link.color || "#ccc";
                 ctx.lineWidth = 2;
                 ctx.stroke();
+
+                // Verbindung "Hotspot" zeichnen
+                const midX = (source.x + target.x) / 2;
+                const midY = (source.y + target.y) / 2;
+                ctx.beginPath();
+                ctx.arc(midX, midY, 5, 0, Math.PI * 2);
+                ctx.fillStyle = "red";
+                ctx.fill();
             }
         });
 
@@ -153,16 +171,51 @@
         });
     }
 
-    canvas.addEventListener('mousedown', (event) => {
-        const pos = { x: event.offsetX, y: event.offsetY };
-        selectedNode = nodes.find(node => {
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+
+    function findNodeAtPosition(pos) {
+        return nodes.find(node => {
             const dx = pos.x - node.x;
             const dy = pos.y - node.y;
             return Math.sqrt(dx * dx + dy * dy) < 20;
         });
+    }
+
+    function findLinkAtPosition(pos) {
+        return links.find(link => {
+            const source = nodes.find(node => node.id === link.source);
+            const target = nodes.find(node => node.id === link.target);
+            if (!source || !target) return false;
+
+            const midX = (source.x + target.x) / 2;
+            const midY = (source.y + target.y) / 2;
+
+            const dx = pos.x - midX;
+            const dy = pos.y - midY;
+
+            return Math.sqrt(dx * dx + dy * dy) < 5;
+        });
+    }
+
+    canvas.addEventListener('mousedown', (event) => {
+        const pos = getMousePos(event);
+        selectedNode = findNodeAtPosition(pos);
 
         if (selectedNode) {
             isDragging = true;
+        } else {
+            selectedLink = findLinkAtPosition(pos);
+            if (selectedLink) {
+                document.getElementById('sourceNode').value = selectedLink.source;
+                document.getElementById('targetNode').value = selectedLink.target;
+                document.getElementById('linkColor').value = selectedLink.color;
+            }
         }
     });
 
@@ -199,12 +252,26 @@
         draw();
     });
 
-    toggleControls.addEventListener('click', () => {
-        if (controls.style.display === 'none' || controls.style.display === '') {
-            controls.style.display = 'block';
-        } else {
-            controls.style.display = 'none';
+    document.getElementById('addLink').addEventListener('click', () => {
+        const source = parseInt(document.getElementById('sourceNode').value);
+        const target = parseInt(document.getElementById('targetNode').value);
+        const color = document.getElementById('linkColor').value;
+
+        const newLink = { source, target, color };
+        links.push(newLink);
+        draw();
+    });
+
+    document.getElementById('deleteLink').addEventListener('click', () => {
+        if (selectedLink) {
+            links = links.filter(link => link !== selectedLink);
+            selectedLink = null;
+            draw();
         }
+    });
+
+    toggleControls.addEventListener('click', () => {
+        controls.style.display = controls.style.display === 'block' ? 'none' : 'block';
     });
 
     darkModeToggle.addEventListener('click', () => {
